@@ -127,7 +127,7 @@ local function open_window(cmd_args)
     }
   elseif glow.config.type == "panel" then
     if win == nil then
-      vim.api.nvim_create_autocmd({ "InsertLeave" }, { pattern = { "*.md" }, Command = "Glue" })
+      vim.api.nvim_create_autocmd({ "InsertLeave" }, { pattern = { "*.md" }, command = "Glow" })
     end
 
     if win ~= nil and vim.api.nvim_win_is_valid(win) then
