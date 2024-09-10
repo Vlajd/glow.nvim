@@ -258,6 +258,7 @@ local function open_pane(cmd_args)
     callback = function(env)
       vim.api.nvim_buf_set_option(buf, "modifiable", true)
       vim.api.nvim_buf_set_lines(buf, 0, -1, true, {})
+      tmp_file = tmp_file()
       run_a_job()
     end
   })
