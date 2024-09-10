@@ -183,7 +183,8 @@ local function open_window(cmd_args)
 
   if glow.config.target.pager then
     vim.cmd("startinsert")
-  endend
+  end
+end
 
 ---@param cmd_args table glow command arguments
 local function open_pane(cmd_args)
