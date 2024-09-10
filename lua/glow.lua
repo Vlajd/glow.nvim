@@ -191,82 +191,6 @@ local function open_window(cmd_args)
 end
 
 local panel = {}
-panel.open_pane = function(cmd_args, opts)
-  if panel.is_open then
-    vim.api.nvim_buf_set_option(buf, "modifiable", true)
-    vim.api.nvim_buf_set_lines(buf, 0, -1, true, {})
-  else
-    local win_opts = {
-      style = "minimal",
-      split = glow.config.split,
-      win = vim.api.nvim_get_current_win()
-    }
-
-    -- create preview buffer and set local options
-    buf = vim.api.nvim_create_buf(false, true)
-    win = vim.api.nvim_open_win(buf, false, win_opts)
-
-    -- options
-    vim.api.nvim_win_set_option(win, "winblend", 0)
-    vim.api.nvim_buf_set_option(buf, "bufhidden", "wipe")
-    vim.api.nvim_buf_set_option(buf, "filetype", "glowpreview")
-
-    -- keymaps
-    local keymaps_opts = { silent = true, buffer = buf }
-    vim.keymap.set("n", "q", close_window, keymaps_opts)
-    vim.keymap.set("n", "<Esc>", close_window, keymaps_opts)
-
-    autocmd = vim.api.nvim_create_autocmd({ "BufWritePost", "FileWritePost" }, {
-      pattern = { "*.md" },
-      desc = "File saved and reloading buffer",
-      callback = function(env) run(opts) end
-    })
-  end
-
-  -- term to receive data
-  local chan = vim.api.nvim_open_term(buf, {})
-
-  -- callback for handling output from process
-  local function on_output(err, data)
-    if err then
-      -- what should we really do here?
-      err(vim.inspect(err))
-    end
-    if data then
-      local lines = vim.split(data, "\n", {})
-      for _, d in ipairs(lines) do
-        vim.api.nvim_chan_send(chan, d .. "\r\n")
-      end
-    end
-  end
-
-  -- setup and kickoff process
-  local cmd = table.remove(cmd_args, 1)
-  -- setup pipes
-  job = {}
-  job.stdout = vim.loop.new_pipe(false)
-  job.stderr = vim.loop.new_pipe(false)
-
-  local job_opts = {
-    args = cmd_args,
-    stdio = { nil, job.stdout, job.stderr },
-  }
-
-  -- callback when process completes
-  local function on_exit()
-    stop_job()
-    cleanup()
-  end
-
-  job.handle = vim.loop.spawn(cmd, job_opts, vim.schedule_wrap(on_exit))
-  vim.loop.read_start(job.stdout, vim.schedule_wrap(on_output))
-  vim.loop.read_start(job.stderr, vim.schedule_wrap(on_output))
-
-  if glow.config.pager then
-    vim.cmd("startinsert")
-  end
-end
-panel.isOpen = false
 
 ---@return string
 local function release_file_url()
@@ -389,6 +313,83 @@ local function run(opts)
     print("Faulty glow config.type value")
   end
 end
+
+panel.open_pane = function(cmd_args, opts)
+  if panel.is_open then
+    vim.api.nvim_buf_set_option(buf, "modifiable", true)
+    vim.api.nvim_buf_set_lines(buf, 0, -1, true, {})
+  else
+    local win_opts = {
+      style = "minimal",
+      split = glow.config.split,
+      win = vim.api.nvim_get_current_win()
+    }
+
+    -- create preview buffer and set local options
+    buf = vim.api.nvim_create_buf(false, true)
+    win = vim.api.nvim_open_win(buf, false, win_opts)
+
+    -- options
+    vim.api.nvim_win_set_option(win, "winblend", 0)
+    vim.api.nvim_buf_set_option(buf, "bufhidden", "wipe")
+    vim.api.nvim_buf_set_option(buf, "filetype", "glowpreview")
+
+    -- keymaps
+    local keymaps_opts = { silent = true, buffer = buf }
+    vim.keymap.set("n", "q", close_window, keymaps_opts)
+    vim.keymap.set("n", "<Esc>", close_window, keymaps_opts)
+
+    autocmd = vim.api.nvim_create_autocmd({ "BufWritePost", "FileWritePost" }, {
+      pattern = { "*.md" },
+      desc = "File saved and reloading buffer",
+      callback = function(env) run(opts) end
+    })
+  end
+
+  -- term to receive data
+  local chan = vim.api.nvim_open_term(buf, {})
+
+  -- callback for handling output from process
+  local function on_output(err, data)
+    if err then
+      -- what should we really do here?
+      err(vim.inspect(err))
+    end
+    if data then
+      local lines = vim.split(data, "\n", {})
+      for _, d in ipairs(lines) do
+        vim.api.nvim_chan_send(chan, d .. "\r\n")
+      end
+    end
+  end
+
+  -- setup and kickoff process
+  local cmd = table.remove(cmd_args, 1)
+  -- setup pipes
+  job = {}
+  job.stdout = vim.loop.new_pipe(false)
+  job.stderr = vim.loop.new_pipe(false)
+
+  local job_opts = {
+    args = cmd_args,
+    stdio = { nil, job.stdout, job.stderr },
+  }
+
+  -- callback when process completes
+  local function on_exit()
+    stop_job()
+    cleanup()
+  end
+
+  job.handle = vim.loop.spawn(cmd, job_opts, vim.schedule_wrap(on_exit))
+  vim.loop.read_start(job.stdout, vim.schedule_wrap(on_output))
+  vim.loop.read_start(job.stderr, vim.schedule_wrap(on_output))
+
+  if glow.config.pager then
+    vim.cmd("startinsert")
+  end
+end
+panel.isOpen = false
 
 local function install_glow(opts)
   local release_url = release_file_url()
