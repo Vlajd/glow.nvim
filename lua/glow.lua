@@ -39,6 +39,8 @@ local config = {
   height = 100,
 }
 
+local run_fn
+
 -- default configs
 glow.config = config
 
@@ -219,7 +221,7 @@ panel.open_pane = function(cmd_args, opts)
     autocmd = vim.api.nvim_create_autocmd({ "BufWritePost", "FileWritePost" }, {
       pattern = { "*.md" },
       desc = "File saved and reloading buffer",
-      callback = function(env) run(opts) end
+      callback = function(env) run_fn(opts) end
     })
   end
 
@@ -389,6 +391,7 @@ local function run(opts)
     print("Faulty glow config.type value")
   end
 end
+run_fn = run
 
 local function install_glow(opts)
   local release_url = release_file_url()
