@@ -228,36 +228,34 @@ local function open_pane(cmd_args)
     end
   end
 
-  -- setup pipes
-  job = {}
-  job.stdout = vim.loop.new_pipe(false)
-  job.stderr = vim.loop.new_pipe(false)
+  local function update_buf(env)
+    -- setup pipes
+    job = {}
+    job.stdout = vim.loop.new_pipe(false)
+    job.stderr = vim.loop.new_pipe(false)
 
-  -- callback when process completes
-  local function on_exit()
-    stop_job()
-    cleanup()
+    -- callback when process completes
+    local function on_exit()
+      stop_job()
+      cleanup()
+    end
+
+    -- setup and kickoff process
+    local cmd = table.remove(cmd_args, 1)
+    local job_opts = {
+      args = cmd_args,
+      stdio = { nil, job.stdout, job.stderr },
+    }
+
+    job.handle = vim.loop.spawn(cmd, job_opts, vim.schedule_wrap(on_exit))
+    vim.loop.read_start(job.stdout, vim.schedule_wrap(on_output))
+    vim.loop.read_start(job.stderr, vim.schedule_wrap(on_output))
   end
-
-  -- setup and kickoff process
-  local cmd = table.remove(cmd_args, 1)
-  local job_opts = {
-    args = cmd_args,
-    stdio = { nil, job.stdout, job.stderr },
-  }
-
-  job.handle = vim.loop.spawn(cmd, job_opts, vim.schedule_wrap(on_exit))
-  vim.loop.read_start(job.stdout, vim.schedule_wrap(on_output))
-  vim.loop.read_start(job.stderr, vim.schedule_wrap(on_output))
 
   autocmd = vim.api.nvim_create_autocmd({ "BufWritePost", "FileWritePost" }, {
     pattern = { "*.md" },
     desc = "File saved and reloading buffer",
-    callback = function(env)
-      job.handle = vim.loop.spawn(cmd, job_opts, vim.schedule_wrap(on_exit))
-      vim.loop.read_start(job.stdout, vim.schedule_wrap(on_output))
-      vim.loop.read_start(job.stderr, vim.schedule_wrap(on_output))
-    end
+    callback = update_buf
   })
 
   if glow.config.pager then
