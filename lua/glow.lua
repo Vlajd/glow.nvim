@@ -247,12 +247,13 @@ local function open_pane(cmd_args)
   }
 
   local function run()
+    print("Running")
     job.handle = vim.loop.spawn(cmd, job_opts, vim.schedule_wrap(on_exit))
     vim.loop.read_start(job.stdout, vim.schedule_wrap(on_output))
     vim.loop.read_start(job.stderr, vim.schedule_wrap(on_output))
   end
 
-  autocmd = vim.api.nvim_create_autocmd({ "BufWritePost" }, { pattern = { "*.md" }, buffer = buf, callback = run })
+  autocmd = vim.api.nvim_create_autocmd({ "BufWritePost" }, { pattern = { "*.md" }, buf = buf, callback = run })
   run()
 
   if glow.config.pager then
