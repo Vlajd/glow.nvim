@@ -254,7 +254,8 @@ local function open_pane(cmd_args)
     pattern = { "*.md" },
     desc = "File saved and reloading buffer",
     callback = function(env)
-      buf = win.api.nvim_create_buf(false, true)
+      vim.api.nvim_buf_delete(buf)
+      buf = vim.api.nvim_create_buf(false, true)
       vim.api.nvim_win_set_buf(win, buf)
 
       -- options
