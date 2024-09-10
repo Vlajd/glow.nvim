@@ -132,13 +132,14 @@ local function open_window(cmd_args)
       vim.api.nvim_buf_set_option(buf, "modifiable", false)
     else
       local win_opts = {
+      style = "minimal",
         split = glow.config.split,
         win = vim.api.nvim_get_current_win()
       }
 
       -- create preview buffer and set local options
       buf = vim.api.nvim_create_buf(false, true)
-      win = vim.api.nvim_open_win(buf, true, win_opts)
+      win = vim.api.nvim_open_win(buf, false, win_opts)
     end
   else
     print("Not a valid config type")
