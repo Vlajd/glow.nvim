@@ -28,15 +28,13 @@ local glow = {}
 local config = {
   glow_path = vim.fn.exepath("glow"),
   install_path = vim.env.HOME .. "/.local/bin",
-  target = {
-    type = "window",
-    border = "shadow",
-    style = vim.o.background,
-    pager = false,
-    width = 100,
-    height = 100,
-    split = "right"
-  }
+  type = "window",
+  split = "right",
+  border = "shadow",
+  style = vim.o.background,
+  pager = false,
+  width = 100,
+  height = 100,
 }
 
 -- default configs
@@ -98,19 +96,19 @@ end
 local function open_window(cmd_args)
   local width = vim.o.columns
   local height = vim.o.lines
-  local height_ratio = glow.config.target.height_ratio or 0.7
-  local width_ratio = glow.config.target.width_ratio or 0.7
+  local height_ratio = glow.config.height_ratio or 0.7
+  local width_ratio = glow.config.width_ratio or 0.7
   local win_height = math.ceil(height * height_ratio)
   local win_width = math.ceil(width * width_ratio)
   local row = math.ceil((height - win_height) / 2 - 1)
   local col = math.ceil((width - win_width) / 2)
 
-  if glow.config.target.width and glow.config.target.width < win_width then
-    win_width = glow.config.target.width
+  if glow.config.width and glow.config.width < win_width then
+    win_width = glow.config.width
   end
 
-  if glow.config.target.height and glow.config.target.height < win_height then
-    win_height = glow.config.target.height
+  if glow.config.height and glow.config.height < win_height then
+    win_height = glow.config.height
   end
 
   -- pass through calculated window width
@@ -124,7 +122,7 @@ local function open_window(cmd_args)
     height = win_height,
     row = row,
     col = col,
-    border = glow.config.target.border,
+    border = glow.config.border,
   }
 
   -- create preview buffer and set local options
@@ -140,7 +138,6 @@ local function open_window(cmd_args)
   local keymaps_opts = { silent = true, buffer = buf }
   vim.keymap.set("n", "q", close_window, keymaps_opts)
   vim.keymap.set("n", "<Esc>", close_window, keymaps_opts)
-  vim.keymap.set("n", "<Enter>", close_window, keymaps_opts)
 
   -- term to receive data
   local chan = vim.api.nvim_open_term(buf, {})
@@ -181,26 +178,24 @@ local function open_window(cmd_args)
   vim.loop.read_start(job.stdout, vim.schedule_wrap(on_output))
   vim.loop.read_start(job.stderr, vim.schedule_wrap(on_output))
 
-  if glow.config.target.pager then
+  if glow.config.pager then
     vim.cmd("startinsert")
   end
 end
 
 ---@param cmd_args table glow command arguments
 local function open_pane(cmd_args)
-  -- pass through calculated window width
-  table.insert(cmd_args, "-w")
-  table.insert(cmd_args, win_width)
-
   local win_opts = {
-    split = glow.config.target.split,
+    style = "minimal",
+    relative = "editor",
+    split = glow.config.split,
+    border = glow.config.border,
     win = vim.api.nvim_get_current_win()
   }
 
   -- create preview buffer and set local options
   buf = vim.api.nvim_create_buf(false, true)
-  win = vim.api.nvim_open_win(0, false, win_opts)
-  vim.api.nvim_win_set_buf(win, buf)
+  win = vim.api.nvim_open_win(buf, false, win_opts)
 
   -- options
   vim.api.nvim_win_set_option(win, "winblend", 0)
@@ -211,7 +206,6 @@ local function open_pane(cmd_args)
   local keymaps_opts = { silent = true, buffer = buf }
   vim.keymap.set("n", "q", close_window, keymaps_opts)
   vim.keymap.set("n", "<Esc>", close_window, keymaps_opts)
-  vim.keymap.set("n", "<Enter>", close_window, keymaps_opts)
 
   -- term to receive data
   local chan = vim.api.nvim_open_term(buf, {})
@@ -252,7 +246,7 @@ local function open_pane(cmd_args)
   vim.loop.read_start(job.stdout, vim.schedule_wrap(on_output))
   vim.loop.read_start(job.stderr, vim.schedule_wrap(on_output))
 
-  if glow.config.target.pager then
+  if glow.config.pager then
     vim.cmd("startinsert")
   end
 end
@@ -364,18 +358,12 @@ local function run(opts)
 
   local cmd_args = { glow.config.glow_path, "-s", glow.config.style }
 
-  if glow.config.target.pager then
+  if glow.config.pager then
     table.insert(cmd_args, "-p")
   end
 
   table.insert(cmd_args, file)
-
-  local buf
-  if glow.config.target.type == "window" then
-    buf = open_window(cmd_args)
-  elseif glow.config.target.type == "pane" then
-    buf = open_pane(cmd_args)
-  end
+  open_window(cmd_args)
 end
 
 local function install_glow(opts)
