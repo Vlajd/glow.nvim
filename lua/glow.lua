@@ -239,25 +239,26 @@ local function open_pane(cmd_args)
     cleanup()
   end
 
-  local function update_buf(env)
-    -- setup and kickoff process
-    local cmd = table.remove(cmd_args, 1)
-    local job_opts = {
-      args = cmd_args,
-      stdio = { nil, job.stdout, job.stderr },
-    }
+  -- setup and kickoff process
+  local cmd = table.remove(cmd_args, 1)
+  local job_opts = {
+    args = cmd_args,
+    stdio = { nil, job.stdout, job.stderr },
+  }
 
-    job.handle = vim.loop.spawn(cmd, job_opts, vim.schedule_wrap(on_exit))
-    vim.loop.read_start(job.stdout, vim.schedule_wrap(on_output))
-    vim.loop.read_start(job.stderr, vim.schedule_wrap(on_output))
-  end
+  job.handle = vim.loop.spawn(cmd, job_opts, vim.schedule_wrap(on_exit))
+  vim.loop.read_start(job.stdout, vim.schedule_wrap(on_output))
+  vim.loop.read_start(job.stderr, vim.schedule_wrap(on_output))
 
   autocmd = vim.api.nvim_create_autocmd({ "BufWritePost", "FileWritePost" }, {
     pattern = { "*.md" },
     desc = "File saved and reloading buffer",
-    callback = update_buf
+    callback = function(env)
+      job.handle = vim.loop.spawn(cmd, job_opts, vim.schedule_wrap(on_exit))
+      vim.loop.read_start(job.stdout, vim.schedule_wrap(on_output))
+      vim.loop.read_start(job.stderr, vim.schedule_wrap(on_output))
+    end
   })
-  update_buf()
 
   if glow.config.pager then
     vim.cmd("startinsert")
