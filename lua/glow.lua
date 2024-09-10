@@ -86,6 +86,10 @@ local function close_window()
   vim.api.nvim_win_close(win, true)
 end
 
+local function close_window()
+  vim.api.nvim_win_close(win, true)
+end
+
 ---@return string
 local function tmp_file()
   local output = vim.api.nvim_buf_get_lines(0, 0, vim.api.nvim_buf_line_count(0), false)
@@ -208,8 +212,8 @@ local function open_pane(cmd_args)
 
   -- keymaps
   local keymaps_opts = { silent = true, buffer = buf }
-  vim.keymap.set("n", "q", close_window, keymaps_opts)
-  vim.keymap.set("n", "<Esc>", close_window, keymaps_opts)
+  vim.keymap.set("n", "q", close_pane, keymaps_opts)
+  vim.keymap.set("n", "<Esc>", close_pane, keymaps_opts)
 
   -- term to receive data
   local chan = vim.api.nvim_open_term(buf, {})
@@ -246,15 +250,15 @@ local function open_pane(cmd_args)
     stdio = { nil, job.stdout, job.stderr },
   }
 
-  local function run()
+  local function update_buf()
     print("Running")
     job.handle = vim.loop.spawn(cmd, job_opts, vim.schedule_wrap(on_exit))
     vim.loop.read_start(job.stdout, vim.schedule_wrap(on_output))
     vim.loop.read_start(job.stderr, vim.schedule_wrap(on_output))
   end
 
-  autocmd = vim.api.nvim_create_autocmd({ "BufModifiedSet" }, { pattern = { "*.md" }, callback = run })
-  run()
+  autocmd = vim.api.nvim_create_autocmd({ "BufWritePost", "FileWritePost" }, { pattern = { "*.md" }, callback = update_buf })
+  update_buf()
 
   if glow.config.pager then
     vim.cmd("startinsert")
