@@ -153,6 +153,7 @@ local function open_pane(cmd_args)
 
   local win_opts = {
     style = "minimal",
+    relative = "editor",
     split = glow.config.target.split,
     win = 0
   }
