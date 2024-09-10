@@ -9,8 +9,6 @@ local tmpfile
 
 local job = {}
 
-local autocmd
-
 -- types
 ---@alias border 'shadow' | 'none' | 'double' | 'rounded' | 'solid' | 'single' | 'rounded'
 ---@alias style 'dark' | 'light'
@@ -30,9 +28,9 @@ local glow = {}
 local config = {
   glow_path = vim.fn.exepath("glow"),
   install_path = vim.env.HOME .. "/.local/bin",
+  border = "shadow",
   type = "window",
   split = "right",
-  border = "shadow",
   style = vim.o.background,
   pager = false,
   width = 100,
@@ -80,11 +78,6 @@ local function close_window()
   stop_job()
   cleanup()
   vim.api.nvim_win_close(win, true)
-
-  if autocmd ~= nil then
-    vim.api.nvim_del_autocmd(autocmd)
-  end
-  panel.is_open = false
 end
 
 ---@return string
@@ -101,40 +94,55 @@ end
 
 ---@param cmd_args table glow command arguments
 local function open_window(cmd_args)
-  local width = vim.o.columns
-  local height = vim.o.lines
-  local height_ratio = glow.config.height_ratio or 0.7
-  local width_ratio = glow.config.width_ratio or 0.7
-  local win_height = math.ceil(height * height_ratio)
-  local win_width = math.ceil(width * width_ratio)
-  local row = math.ceil((height - win_height) / 2 - 1)
-  local col = math.ceil((width - win_width) / 2)
+  if glow.config.type == "window" then
+    local width = vim.o.columns
+    local height = vim.o.lines
+    local height_ratio = glow.config.height_ratio or 0.7
+    local width_ratio = glow.config.width_ratio or 0.7
+    local win_height = math.ceil(height * height_ratio)
+    local win_width = math.ceil(width * width_ratio)
+    local row = math.ceil((height - win_height) / 2 - 1)
+    local col = math.ceil((width - win_width) / 2)
 
-  if glow.config.width and glow.config.width < win_width then
-    win_width = glow.config.width
+    if glow.config.width and glow.config.width < win_width then
+      win_width = glow.config.width
+    end
+
+    if glow.config.height and glow.config.height < win_height then
+      win_height = glow.config.height
+    end
+
+    -- pass through calculated window width
+    table.insert(cmd_args, "-w")
+    table.insert(cmd_args, win_width)
+
+    local win_opts = {
+      style = "minimal",
+      relative = "editor",
+      width = win_width,
+      height = win_height,
+      row = row,
+      col = col,
+      border = glow.config.border,
+    }
+  elseif glow.config.type == "panel" then
+    if vim.api.nvim_win_is_valid(win) then
+      vim.api.nvim_buf_set_option(buf, "modifiable", true)
+      vim.api.nvim_buf_set_lines(buf, 0, -1, true, {})
+      vim.api.nvim_buf_set_option(buf, "modifiable", false)
+    else
+      local wind_opts = {
+        split = glow.config.split,
+        win = vim.api.nvim_current_win()
+      }
+
+      -- create preview buffer and set local options
+      buf = vim.api.nvim_create_buf(false, true)
+      win = vim.api.nvim_open_win(buf, true, win_opts)
+    end
+  else
+    print("Not a valid config type")
   end
-
-  if glow.config.height and glow.config.height < win_height then
-    win_height = glow.config.height
-  end
-
-  -- pass through calculated window width
-  table.insert(cmd_args, "-w")
-  table.insert(cmd_args, win_width)
-
-  local win_opts = {
-    style = "minimal",
-    relative = "editor",
-    width = win_width,
-    height = win_height,
-    row = row,
-    col = col,
-    border = glow.config.border,
-  }
-
-  -- create preview buffer and set local options
-  buf = vim.api.nvim_create_buf(false, true)
-  win = vim.api.nvim_open_win(buf, true, win_opts)
 
   -- options
   vim.api.nvim_win_set_option(win, "winblend", 0)
@@ -189,8 +197,6 @@ local function open_window(cmd_args)
     vim.cmd("startinsert")
   end
 end
-
-local panel = {}
 
 ---@return string
 local function release_file_url()
@@ -304,92 +310,8 @@ local function run(opts)
   end
 
   table.insert(cmd_args, file)
-
-  if glow.config.type == "window" then
-    open_window(cmd_args)
-  elseif glow.config.type == "pane" then
-    panel.open_pane(cmd_args, opts)
-  else
-    print("Faulty glow config.type value")
-  end
+  open_window(cmd_args)
 end
-
-panel.open_pane = function(cmd_args, opts)
-  if panel.is_open then
-    vim.api.nvim_buf_set_option(buf, "modifiable", true)
-    vim.api.nvim_buf_set_lines(buf, 0, -1, true, {})
-  else
-    local win_opts = {
-      style = "minimal",
-      split = glow.config.split,
-      win = vim.api.nvim_get_current_win()
-    }
-
-    -- create preview buffer and set local options
-    buf = vim.api.nvim_create_buf(false, true)
-    win = vim.api.nvim_open_win(buf, false, win_opts)
-
-    -- options
-    vim.api.nvim_win_set_option(win, "winblend", 0)
-    vim.api.nvim_buf_set_option(buf, "bufhidden", "wipe")
-    vim.api.nvim_buf_set_option(buf, "filetype", "glowpreview")
-
-    -- keymaps
-    local keymaps_opts = { silent = true, buffer = buf }
-    vim.keymap.set("n", "q", close_window, keymaps_opts)
-    vim.keymap.set("n", "<Esc>", close_window, keymaps_opts)
-
-    autocmd = vim.api.nvim_create_autocmd({ "BufWritePost", "FileWritePost" }, {
-      pattern = { "*.md" },
-      desc = "File saved and reloading buffer",
-      callback = function(env) run(opts) end
-    })
-  end
-
-  -- term to receive data
-  local chan = vim.api.nvim_open_term(buf, {})
-
-  -- callback for handling output from process
-  local function on_output(err, data)
-    if err then
-      -- what should we really do here?
-      err(vim.inspect(err))
-    end
-    if data then
-      local lines = vim.split(data, "\n", {})
-      for _, d in ipairs(lines) do
-        vim.api.nvim_chan_send(chan, d .. "\r\n")
-      end
-    end
-  end
-
-  -- setup and kickoff process
-  local cmd = table.remove(cmd_args, 1)
-  -- setup pipes
-  job = {}
-  job.stdout = vim.loop.new_pipe(false)
-  job.stderr = vim.loop.new_pipe(false)
-
-  local job_opts = {
-    args = cmd_args,
-    stdio = { nil, job.stdout, job.stderr },
-  }
-
-  -- callback when process completes
-  local function on_exit()
-    stop_job()
-    cleanup()
-  end
-
-  job.handle = vim.loop.spawn(cmd, job_opts, vim.schedule_wrap(on_exit))
-  vim.loop.read_start(job.stdout, vim.schedule_wrap(on_output))
-  vim.loop.read_start(job.stderr, vim.schedule_wrap(on_output))
-
-  if glow.config.pager then
-    vim.cmd("startinsert")
-  end
-end
-panel.isOpen = false
 
 local function install_glow(opts)
   local release_url = release_file_url()
