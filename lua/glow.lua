@@ -86,10 +86,6 @@ local function close_window()
   vim.api.nvim_win_close(win, true)
 end
 
-local function close_window()
-  vim.api.nvim_win_close(win, true)
-end
-
 ---@return string
 local function tmp_file()
   local output = vim.api.nvim_buf_get_lines(0, 0, vim.api.nvim_buf_line_count(0), false)
@@ -212,8 +208,8 @@ local function open_pane(cmd_args)
 
   -- keymaps
   local keymaps_opts = { silent = true, buffer = buf }
-  vim.keymap.set("n", "q", close_pane, keymaps_opts)
-  vim.keymap.set("n", "<Esc>", close_pane, keymaps_opts)
+  vim.keymap.set("n", "q", close_window, keymaps_opts)
+  vim.keymap.set("n", "<Esc>", close_window, keymaps_opts)
 
   -- term to receive data
   local chan = vim.api.nvim_open_term(buf, {})
