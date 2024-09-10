@@ -254,8 +254,43 @@ local function open_pane(cmd_args)
     pattern = { "*.md" },
     desc = "File saved and reloading buffer",
     callback = function(env)
-      close_window()
-      open_pane(cmd_args)
+      win.api.nvim_buf_delete(buf)
+      buf = win.api.nvim_create_buf(false, true)
+      vim.api.nvim_win_set_buf(win, buf)
+
+      -- options
+      vim.api.nvim_buf_set_option(buf, "bufhidden", "wipe")
+      vim.api.nvim_buf_set_option(buf, "filetype", "glowpreview")
+
+      -- keymaps
+      local keymaps_opts = { silent = true, buffer = buf }
+      vim.keymap.set("n", "q", close_window, keymaps_opts)
+      vim.keymap.set("n", "<Esc>", close_window, keymaps_opts)
+
+      -- term to receive data
+      local chan = vim.api.nvim_open_term(buf, {})
+
+      -- setup pipes
+      job = {}
+      job.stdout = vim.loop.new_pipe(false)
+      job.stderr = vim.loop.new_pipe(false)
+
+      -- callback when process completes
+      local function on_exit()
+        stop_job()
+        cleanup()
+      end
+
+      -- setup and kickoff process
+      local cmd = table.remove(cmd_args, 1)
+      local job_opts = {
+        args = cmd_args,
+        stdio = { nil, job.stdout, job.stderr },
+      }
+
+      job.handle = vim.loop.spawn(cmd, job_opts, vim.schedule_wrap(on_exit))
+      vim.loop.read_start(job.stdout, vim.schedule_wrap(on_output))
+      vim.loop.read_start(job.stderr, vim.schedule_wrap(on_output))
     end
   })
 
