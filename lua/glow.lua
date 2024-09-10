@@ -119,7 +119,7 @@ local function open_window(cmd_args)
 
   local win_opts = {
     style = "minimal",
-    relative = "editor",
+    relative = "col",
     width = win_width,
     height = win_height,
     row = row,
