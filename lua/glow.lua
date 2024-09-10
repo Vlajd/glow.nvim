@@ -9,6 +9,8 @@ local tmpfile
 
 local job = {}
 
+local autocmd
+
 -- types
 ---@alias border 'shadow' | 'none' | 'double' | 'rounded' | 'solid' | 'single' | 'rounded'
 ---@alias style 'dark' | 'light'
@@ -43,6 +45,10 @@ glow.config = config
 local function cleanup()
   if tmpfile ~= nil then
     vim.fn.delete(tmpfile)
+  end
+
+  if autocmd ~= nil then
+    vim.api.nvim_del_autocmd(autocmd)
   end
 end
 
@@ -240,9 +246,14 @@ local function open_pane(cmd_args)
     stdio = { nil, job.stdout, job.stderr },
   }
 
-  job.handle = vim.loop.spawn(cmd, job_opts, vim.schedule_wrap(on_exit))
-  vim.loop.read_start(job.stdout, vim.schedule_wrap(on_output))
-  vim.loop.read_start(job.stderr, vim.schedule_wrap(on_output))
+  local function run()
+    job.handle = vim.loop.spawn(cmd, job_opts, vim.schedule_wrap(on_exit))
+    vim.loop.read_start(job.stdout, vim.schedule_wrap(on_output))
+    vim.loop.read_start(job.stderr, vim.schedule_wrap(on_output))
+  end
+
+  autocmd = vim.api.nvim_create_autocmd({ "BufWritePost" }, { pattern = { "*.md" }, callback = run })
+  run()
 
   if glow.config.pager then
     vim.cmd("startinsert")
