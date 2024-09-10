@@ -46,10 +46,6 @@ local function cleanup()
   if tmpfile ~= nil then
     vim.fn.delete(tmpfile)
   end
-
-  if autocmd ~= nil then
-    vim.api.nvim_del_autocmd(autocmd)
-  end
 end
 
 local function err(msg)
@@ -84,6 +80,10 @@ local function close_window()
   stop_job()
   cleanup()
   vim.api.nvim_win_close(win, true)
+
+  if autocmd ~= nil then
+    vim.api.nvim_del_autocmd(autocmd)
+  end
 end
 
 ---@return string
