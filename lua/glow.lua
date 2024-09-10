@@ -384,7 +384,7 @@ local function run(opts)
   if glow.config.type == "window" then
     open_window(cmd_args)
   elseif glow.config.type == "pane" then
-    open_pane(cmd_args)
+    panel.open_pane(cmd_args)
   else
     print("Faulty glow config.type value")
   end
