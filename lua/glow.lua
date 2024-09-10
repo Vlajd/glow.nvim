@@ -363,7 +363,14 @@ local function run(opts)
   end
 
   table.insert(cmd_args, file)
-  open_window(cmd_args)
+
+  if glow.config.type == "window" then
+    open_window(cmd_args)
+  elseif glow.config.type == "pane" then
+    open_window(cmd_args)
+  else
+    print("Faulty glow config.type value")
+  end
 end
 
 local function install_glow(opts)
