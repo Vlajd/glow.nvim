@@ -211,10 +211,10 @@ local function open_pane(cmd_args)
   vim.keymap.set("n", "q", close_window, keymaps_opts)
   vim.keymap.set("n", "<Esc>", close_window, keymaps_opts)
 
-  local function update_buf(env)
-    -- term to receive data
-    local chan = vim.api.nvim_open_term(buf, {})
+  -- term to receive data
+  local chan = vim.api.nvim_open_term(buf, {})
 
+  local function update_buf(env)
     -- callback for handling output from process
     local function on_output(err, data)
       if err then
