@@ -214,32 +214,32 @@ local function open_pane(cmd_args)
   -- term to receive data
   local chan = vim.api.nvim_open_term(buf, {})
 
+  -- callback for handling output from process
+  local function on_output(err, data)
+    if err then
+      -- what should we really do here?
+      err(vim.inspect(err))
+    end
+    if data then
+      local lines = vim.split(data, "\n", {})
+      for _, d in ipairs(lines) do
+        vim.api.nvim_chan_send(chan, d .. "\r\n")
+      end
+    end
+  end
+
+  -- setup pipes
+  job = {}
+  job.stdout = vim.loop.new_pipe(false)
+  job.stderr = vim.loop.new_pipe(false)
+
+  -- callback when process completes
+  local function on_exit()
+    stop_job()
+    cleanup()
+  end
+
   local function update_buf(env)
-    -- callback for handling output from process
-    local function on_output(err, data)
-      if err then
-        -- what should we really do here?
-        err(vim.inspect(err))
-      end
-      if data then
-        local lines = vim.split(data, "\n", {})
-        for _, d in ipairs(lines) do
-          vim.api.nvim_chan_send(chan, d .. "\r\n")
-        end
-      end
-    end
-
-    -- setup pipes
-    job = {}
-    job.stdout = vim.loop.new_pipe(false)
-    job.stderr = vim.loop.new_pipe(false)
-
-    -- callback when process completes
-    local function on_exit()
-      stop_job()
-      cleanup()
-    end
-
     -- setup and kickoff process
     local cmd = table.remove(cmd_args, 1)
     local job_opts = {
@@ -247,7 +247,6 @@ local function open_pane(cmd_args)
       stdio = { nil, job.stdout, job.stderr },
     }
 
-    print("Running")
     job.handle = vim.loop.spawn(cmd, job_opts, vim.schedule_wrap(on_exit))
     vim.loop.read_start(job.stdout, vim.schedule_wrap(on_output))
     vim.loop.read_start(job.stderr, vim.schedule_wrap(on_output))
