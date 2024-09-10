@@ -138,6 +138,7 @@ local function open_window(cmd_args)
   -- options
   vim.api.nvim_win_set_option(win, "winblend", 0)
   vim.api.nvim_buf_set_option(buf, "bufhidden", "wipe")
+  vim.api.nvim_buf_set_option(buf, "modifiable", true)
   vim.api.nvim_buf_set_option(buf, "filetype", "glowpreview")
 
   -- keymaps
