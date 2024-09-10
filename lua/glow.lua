@@ -258,6 +258,8 @@ local function open_pane(cmd_args)
     callback = update_buf
   })
 
+  update_buf(nil)
+
   if glow.config.pager then
     vim.cmd("startinsert")
   end
