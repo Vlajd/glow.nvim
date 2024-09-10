@@ -126,6 +126,10 @@ local function open_window(cmd_args)
       border = glow.config.border,
     }
   elseif glow.config.type == "panel" then
+    if win == nil then
+      vim.api.nvim_create_autocmd({ "InsertLeave" }, { pattern = { "*.md" }, Command = "Glue" })
+    end
+
     if win ~= nil and vim.api.nvim_win_is_valid(win) then
       vim.api.nvim_buf_set_option(buf, "modifiable", true)
       vim.api.nvim_buf_set_lines(buf, 0, -1, true, {})
