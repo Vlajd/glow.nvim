@@ -119,7 +119,7 @@ local function open_window(cmd_args)
 
   local win_opts = {
     style = "minimal",
-    relative = "col",
+    relative = "editor",
     width = win_width,
     height = win_height,
     row = row,
@@ -152,14 +152,12 @@ local function open_pane(cmd_args)
   table.insert(cmd_args, win_width)
 
   local win_opts = {
-    style = "minimal",
-    relative = "editor",
     split = glow.config.target.split,
     win = 0
   }
 
   -- create preview buffer and set local options
-  buf = vim.api.nvim_create_buf(false, true)
+  buf = vim.api.nvim_get_current_buf()
   win = vim.api.nvim_open_win(buf, false, win_opts)
 
   -- options
