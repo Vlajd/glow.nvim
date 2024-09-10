@@ -131,7 +131,7 @@ local function open_window(cmd_args)
       vim.api.nvim_buf_set_lines(buf, 0, -1, true, {})
       vim.api.nvim_buf_set_option(buf, "modifiable", false)
     else
-      local wind_opts = {
+      local win_opts = {
         split = glow.config.split,
         win = vim.api.nvim_get_current_win()
       }
