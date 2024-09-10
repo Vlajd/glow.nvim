@@ -190,7 +190,7 @@ local function open_window(cmd_args)
   end
 end
 
-local panel
+local panel = {}
 panel.open_pane = function(cmd_args, opts)
   if panel.is_open then
     vim.api.nvim_buf_set_option(buf, "modifiable", true)
