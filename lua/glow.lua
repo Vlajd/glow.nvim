@@ -153,12 +153,13 @@ local function open_pane(cmd_args)
 
   local win_opts = {
     split = glow.config.target.split,
-    win = 0
+    win = vim.api.nvim_get_current_win()
   }
 
   -- create preview buffer and set local options
-  buf = vim.api.nvim_get_current_buf()
-  win = vim.api.nvim_open_win(buf, false, win_opts)
+  buf = vim.api.nvim_create_buf(false, true)
+  win = vim.api.nvim_open_win(0, false, win_opts)
+  vim.api.nvim_win_set_buf(win, buf)
 
   -- options
   vim.api.nvim_win_set_option(win, "winblend", 0)
