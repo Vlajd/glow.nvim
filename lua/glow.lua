@@ -126,27 +126,19 @@ local function open_window(cmd_args)
       border = glow.config.border,
     }
   elseif glow.config.type == "panel" then
-    local function create_buffer()
+    if win ~= nil and vim.api.nvim_win_is_valid(win) then
+      vim.api.nvim_buf_set_option(buf, "modifiable", true)
+      vim.api.nvim_buf_set_lines(buf, 0, -1, true, {})
+      vim.api.nvim_buf_set_option(buf, "modifiable", false)
+    else
       local wind_opts = {
         split = glow.config.split,
-        win = vim.api.nvim_current_win()
+        win = vim.api.nvim_get_current_win()
       }
 
       -- create preview buffer and set local options
       buf = vim.api.nvim_create_buf(false, true)
       win = vim.api.nvim_open_win(buf, true, win_opts)
-    end
-
-    if win ~= nil then
-      if vim.api.nvim_win_is_valid(win) then
-        vim.api.nvim_buf_set_option(buf, "modifiable", true)
-        vim.api.nvim_buf_set_lines(buf, 0, -1, true, {})
-        vim.api.nvim_buf_set_option(buf, "modifiable", false)
-      else
-        create_buffer()
-      end
-    else
-      create_buffer()
     end
   else
     print("Not a valid config type")
